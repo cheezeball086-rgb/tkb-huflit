@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xếp Thời Gian Biểu HUFLIT Smart Clean</title>
+    
+    <link rel="icon" type="image/png" href="https://img.icons8.com/pastel-glyph/64/0d47a1/calendar.png">
+
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -134,7 +137,7 @@
             border-collapse: separate;
             border-spacing: 0;
             table-layout: fixed;
-            min-width: 900px; /* Tăng nhẹ để có không gian khi chia đôi ô */
+            min-width: 900px;
         }
 
         th, td {
@@ -198,6 +201,20 @@
             color: var(--danger-text) !important;
             font-weight: bold !important;
             font-style: italic !important;
+        }
+
+        /* Chữ cảnh báo trùng lịch học */
+        .clash-warning-text {
+            margin-top: 6px;
+            font-size: 10.5px;
+            color: var(--danger-text);
+            font-weight: bold;
+            background: var(--danger-pastel);
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            border: 1px solid #ffcdd2;
+            text-align: center;
         }
 
         .btn-delete {
@@ -460,17 +477,26 @@
             return { text: "Cơ sở khác", code: "OTHER" };
         }
 
-        // Kiểm tra trùng lịch: Chỉ chặn nếu khác Tên môn và khác LHP hoàn toàn
+        // ĐÃ KHÓA BỎ LỆNH CHẶN: Không bao giờ chặn trùng, luôn cho phép dán lịch thoải mái
         function checkClashAdvanced(day, slots, currentName, currentLhp) {
-            for (let slot of slots) {
-                let clashes = subjectsPlaced.filter(s => s.day === day && s.slots.includes(slot));
-                for (let clash of clashes) {
-                    if (clash.name.toLowerCase() !== currentName.toLowerCase() && (currentLhp === "Thủ công" || clash.lhp !== currentLhp)) {
-                        return { type: 'block', target: clash }; // Trùng môn khác hoàn toàn -> Chặn
+            return { type: 'none' };
+        }
+
+        // Hàm kiểm tra xem một môn học cụ thể có đang bị trùng slot với một môn KHÁC không
+        function isSubjectReallyClashed(subObj) {
+            let matches = subjectsPlaced.filter(s => s.id !== subObj.id && s.day === subObj.day);
+            for (let match of matches) {
+                // Nếu trùng ít nhất 1 tiết chung nhau
+                let hasCommonSlot = subObj.slots.some(slot => match.slots.includes(slot));
+                if (hasCommonSlot) {
+                    // Nếu trùng tên và trùng mã lớp học phần -> Hệ thống coi là cùng 1 môn (không tính là trùng)
+                    if (subObj.name.toLowerCase() === match.name.toLowerCase() && subObj.lhp === match.lhp) {
+                        continue;
                     }
+                    return true; // Trùng môn khác hoàn toàn!
                 }
             }
-            return { type: 'none' };
+            return false;
         }
 
         function processMultiData() {
@@ -480,7 +506,6 @@
             const lines = rawText.split('\n');
             let addedCount = 0;
             let needToChooseTimeSubjects = [];
-            let clashedSubjectsList = [];
 
             lines.forEach(line => {
                 let cleanLine = line.trim();
@@ -510,16 +535,11 @@
                     for (let s = start; s <= end; s++) { if (s >= 1 && s <= 12) slots.push(s); }
 
                     if (slots.length > 0 && day >= 2 && day <= 8) {
-                        let result = checkClashAdvanced(day, slots, subjectName, lhpCode);
-                        if (result.type === 'none') {
-                            subjectsPlaced.push({
-                                id: 'p-' + Date.now() + Math.random(),
-                                lhp: lhpCode, name: subjectName, giangVien: giangVien, room: room, day: day, slots: slots
-                            });
-                            addedCount++;
-                        } else if (result.type === 'block') {
-                            if (!clashedSubjectsList.includes(subjectName)) clashedSubjectsList.push(subjectName);
-                        }
+                        subjectsPlaced.push({
+                            id: 'p-' + Date.now() + Math.random(),
+                            lhp: lhpCode, name: subjectName, giangVien: giangVien, room: room, day: day, slots: slots
+                        });
+                        addedCount++;
                     }
                 } else {
                     let maMonIdx = columns.findIndex(col => col.match(/^[a-zA-Z0-9]{5,8}$/));
@@ -539,9 +559,6 @@
             updateTimetableGrid();
 
             if (addedCount > 0) showToast(`ĐÃ XẾP THÀNH CÔNG ${addedCount} LỊCH HỌC!`);
-            if (clashedSubjectsList.length > 0) {
-                alert(`❌ KHÔNG THỂ THÊM các môn sau do trùng lịch với môn KHÁC:\n• ${clashedSubjectsList.join('\n• ')}`);
-            }
             if (needToChooseTimeSubjects.length > 0) handleSequentialModal(needToChooseTimeSubjects);
         }
 
@@ -561,12 +578,6 @@
                     btn.innerText = opt.label;
                     btn.onclick = () => {
                         let chosenDay = parseInt(document.getElementById('modalDaySelect').value);
-                        let result = checkClashAdvanced(chosenDay, opt.slots, pendingModalSubject.name, pendingModalSubject.lhp);
-                        
-                        if (result.type === 'block') {
-                            alert(`❌ TRÙNG LỊCH với môn "${result.target.name}"!`);
-                            return;
-                        }
                         subjectsPlaced.push({
                             id: 'p-' + Date.now() + Math.random(),
                             ...pendingModalSubject,
@@ -596,12 +607,6 @@
             if (!name) { alert('Vui lòng điền Tên môn học!'); return; }
             if (slots.length === 0) { alert('Vui lòng chọn ít nhất một Tiết học!'); return; }
 
-            let result = checkClashAdvanced(day, slots, name, lhp);
-            if (result.type === 'block') {
-                alert(`❌ TRÙNG LỊCH! Khung giờ này đã có môn "${result.target.name}" học rồi.`);
-                return;
-            }
-
             subjectsPlaced.push({
                 id: 'p-' + Date.now(), lhp: lhp, name: name, giangVien: giangVien, room: room, day: day, slots: slots
             });
@@ -615,14 +620,12 @@
             updateTimetableGrid();
         }
 
-        // THUẬT TOÁN DỰNG GRID TỰ ĐỘNG PHÂN CHIA SONG SONG NHIỀU CỘT
         function updateTimetableGrid() {
             const table = document.getElementById('mainTimetable');
             table.innerHTML = '';
-
             const selectedCampus = document.getElementById('studentCampus').value;
 
-            // Bước 1: Tính toán số lượng cột tối đa cần có cho mỗi Thứ (Mặc định = 1)
+            // Tính số cột phụ tối đa cho mỗi Thứ
             let daySubColumns = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1 };
             
             timeSlots.forEach(ts => {
@@ -630,12 +633,11 @@
                 for (let d = 2; d <= 8; d++) {
                     let count = subjectsPlaced.filter(s => s.day === d && s.slots.includes(ts.slot)).length;
                     if (count > daySubColumns[d]) {
-                        daySubColumns[d] = count; // Nếu khung giờ đó có 2 môn trùng, Thứ đó biến thành 2 cột song song
+                        daySubColumns[d] = count;
                     }
                 }
             });
 
-            // Bước 2: Tạo Header (Dòng tiêu đề Thứ) tương ứng số cột đã tính toán
             let thead = document.createElement('thead');
             let hTr = document.createElement('tr');
             hTr.innerHTML = `<th class="slot-col" rowspan="2">Tiết</th><th class="time-col" rowspan="2">Thời gian học</th>`;
@@ -647,10 +649,7 @@
             thead.appendChild(hTr);
             table.appendChild(thead);
 
-            // Bước 3: Tạo Ma trận ô trống sẵn sàng điền dữ liệu
             let tbody = document.createElement('tbody');
-            
-            // Một object lưu trạng thái ô nào đã bị gộp (rowspan) bao phủ để bỏ qua khi duyệt dòng sau
             let covered = {}; 
 
             timeSlots.forEach(ts => {
@@ -667,13 +666,11 @@
 
                 for (let d = 2; d <= 8; d++) {
                     let totalSubCols = daySubColumns[d];
-                    
-                    // Lấy tất cả môn học thuộc Thứ này đang bắt đầu đúng từ Tiết này
                     let activeSubs = subjectsPlaced.filter(s => s.day === d && [...s.slots].sort((a,b)=>a-b)[0] === ts.slot);
                     
                     for (let cIdx = 0; cIdx < totalSubCols; cIdx++) {
                         let coverKey = `${ts.slot}-${d}-${cIdx}`;
-                        if (covered[coverKey]) continue; // Ô này đang bị môn dòng trên đè xuống (rowspan), bỏ qua không render
+                        if (covered[coverKey]) continue;
 
                         let currentSub = activeSubs[cIdx];
 
@@ -681,18 +678,19 @@
                             let sorted = [...currentSub.slots].sort((a,b)=>a-b);
                             let duration = sorted.length;
                             
-                            // Đánh dấu bao phủ các ô dòng dưới
                             for (let sItem of sorted) {
                                 covered[`${sItem}-${d}-${cIdx}`] = true;
                             }
 
-                            // Xác định xem ô môn học này có được kéo rộng ra (colspan) cho hết các cột trống không
                             let remCols = totalSubCols - cIdx;
                             let colSpanAttr = (activeSubs.length === 1) ? `colspan="${remCols}"` : '';
-                            if (activeSubs.length === 1) cIdx = totalSubCols; // Nhảy cóc luôn nếu chiếm hết cột còn lại
+                            if (activeSubs.length === 1) cIdx = totalSubCols;
 
                             let roomAnalysis = analyzeRoom(currentSub.room);
-                            let isClash = (roomAnalysis.code !== "UNKNOWN" && roomAnalysis.code !== "OTHER" && roomAnalysis.code !== selectedCampus);
+                            let isCampusClash = (roomAnalysis.code !== "UNKNOWN" && roomAnalysis.code !== "OTHER" && roomAnalysis.code !== selectedCampus);
+                            
+                            // Kiểm tra trùng lịch giờ học để kích hoạt nhãn chữ đỏ
+                            let isTimeClashed = isSubjectReallyClashed(currentSub);
 
                             let td = document.createElement('td');
                             if (colSpanAttr) td.setAttribute('colspan', remCols);
@@ -704,15 +702,15 @@
                                     <div class="placed-title">${currentSub.name}</div>
                                     <div class="placed-info">LHP: <strong>${currentSub.lhp}</strong></div>
                                     <div class="placed-info">GV: <strong>${currentSub.giangVien}</strong></div>
-                                    <div class="room-display ${isClash ? 'clash-campus' : ''}">
+                                    <div class="room-display ${isCampusClash ? 'clash-campus' : ''}">
                                       Phòng: ${currentSub.room} <br>
                                       <span style="font-size:10px; opacity:0.8;">(${roomAnalysis.text})</span>
                                     </div>
+                                    ${isTimeClashed ? '<div class="clash-warning-text">⚠️ TRÙNG LỊCH</div>' : ''}
                                 </div>
                             `;
                             tr.appendChild(td);
                         } else {
-                            // Ô trống bình thường không có môn học
                             let td = document.createElement('td');
                             tr.appendChild(td);
                         }

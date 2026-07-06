@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xếp Thời Gian Biểu HUFLIT Smart Clean</title>
     
+    <!-- ICON TRÊN TAB -->
     <link rel="icon" type="image/png" href="https://img.icons8.com/pastel-glyph/64/0d47a1/calendar.png">
 
     <style>
@@ -121,6 +122,8 @@
         .btn-import:hover { background-color: #90caf9; }
         .btn-manual { background-color: #cbd5e1; color: #1e293b; }
         .btn-manual:hover { background-color: #94a3b8; }
+        .btn-print-view { background-color: #bbf7d0; color: #166534; font-size: 12px; margin-top: 8px; border: 1px solid #86efac; }
+        .btn-print-view:hover { background-color: #86efac; }
 
         /* BẢNG LỊCH HỌC BÊN PHẢI */
         .main-board {
@@ -235,7 +238,7 @@
             z-index: 5;
         }
 
-        /* THÔNG BÁO XOÁ MÔN */
+        /* THÔNG BÁO */
         .toast {
             position: fixed;
             top: 20px;
@@ -259,12 +262,12 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Hộp thoại chọn Tiết học */
+        /* Hộp thoại chọn Tiết học / Trang In */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.4);
             align-items: center;
             justify-content: center;
             z-index: 999;
@@ -275,11 +278,47 @@
             background: white;
             padding: 24px;
             border-radius: var(--border-radius);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             max-width: 420px;
             width: 100%;
             text-align: center;
         }
+        
+        /* GIAO DIỆN IN DANH SÁCH - SIÊU TINH GỌN */
+        .print-modal-content {
+            max-width: 780px;
+            background: white;
+            padding: 22px;
+            border-radius: 8px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 12px; /* Chữ nhỏ gọn gàng */
+        }
+        .print-table th, .print-table td {
+            border-bottom: 1px solid #e2e8f0; /* Bỏ viền dọc thô, chỉ giữ viền ngang mờ */
+            padding: 6px 8px; /* Padding siêu hẹp giúp tiết kiệm diện tích */
+            text-align: left;
+            color: #334155;
+        }
+        .print-table th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            border-bottom: 2px solid #cbd5e1;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
         .modal-title { font-weight: bold; color: #1e3a8a; margin-bottom: 12px; font-size: 14px; }
         .slot-options-group {
             display: flex;
@@ -304,6 +343,32 @@
         .slot-opt-btn:hover { background: #90caf9; }
         .btn-cancel { background: #e2e8f0; color: #475569; }
         .btn-cancel:hover { background: #cbd5e1; }
+
+        /* TỐI ƯU KHI IN RA GIẤY / LƯU PDF */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printAreaModal, #printAreaModal * {
+                visibility: visible;
+            }
+            #printAreaModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+            }
+            .print-actions {
+                display: none !important;
+            }
+            .print-modal-content {
+                box-shadow: none !important;
+                padding: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+        }
 
         @media (max-width: 768px) {
             .container {
@@ -332,6 +397,7 @@
 <body>
 
     <div class="container">
+        <!-- SIDEBAR TRÁI -->
         <div class="sidebar">
             <div class="panel" style="background: #fffbeb; border-color: #fef3c7;">
                 <h3>📍 Cấu hình sinh viên</h3>
@@ -358,19 +424,19 @@
                 <h3>🛠 Cách 2: Nhập thủ công</h3>
                 <div class="form-group">
                     <label>Tên môn học:</label>
-                    <input type="text" id="mTenMon" placeholder="Ví dụ: Viết tiếng Nhật 3">
+                    <input type="text" id="mTenMon" placeholder="Ví dụ: Môn học A">
                 </div>
                 <div class="form-group">
                     <label>Mã Lớp học phần (LHP):</label>
-                    <input type="text" id="mLhp" placeholder="Ví dụ: 261162213302">
+                    <input type="text" id="mLhp" placeholder="Ví dụ: 123456789">
                 </div>
                 <div class="form-group">
                     <label>Giảng viên:</label>
-                    <input type="text" id="mGiangVien" placeholder="Ví dụ: ThS. Đặng Thanh Yến Linh">
+                    <input type="text" id="mGiangVien" placeholder="Ví dụ: Nguyễn Văn A">
                 </div>
                 <div class="form-group">
                     <label>Nhập Phòng học:</label>
-                    <input type="text" id="mRoom" placeholder="Ví dụ: A302, K201, HPKB1...">
+                    <input type="text" id="mRoom" placeholder="Ví dụ: Phòng học B">
                 </div>
                 <div class="form-group">
                     <label>Chọn Thứ học:</label>
@@ -403,14 +469,24 @@
                 </div>
                 <button class="btn-manual" onclick="addManualSubject()">+ Thêm vào lịch học</button>
             </div>
+
+            <!-- NÚT XUẤT TRANG IN SIÊU GỌN -->
+            <div class="panel" style="background: #f0fdf4; border-color: #bbf7d0;">
+                <h3 style="color: #166534; border-bottom-color: #bbf7d0;">🖨 Xuất dữ liệu</h3>
+                <p style="font-size: 11px; margin: 0; color: #166534;">Xem danh sách tổng hợp đã được rút gọn tối đa phục vụ việc in ấn hoặc lưu trữ PDF.</p>
+                <button class="btn-print-view" onclick="openPrintModal()">🖨 Xem danh sách để in</button>
+            </div>
         </div>
 
+        <!-- BẢNG LỊCH HỌC BÊN PHẢI -->
         <div class="main-board">
             <table id="mainTimetable">
-                </table>
+                <!-- Sẽ được tạo động hoàn toàn qua JS -->
+            </table>
         </div>
     </div>
 
+    <!-- MODAL CHỌN GIỜ HỌC -->
     <div class="modal" id="slotModal">
         <div class="modal-content">
             <div class="modal-title" id="modalTitle">Chọn khung thời gian học</div>
@@ -425,6 +501,35 @@
             </select>
             <div class="slot-options-group" id="optionsGroup"></div>
             <button class="btn-cancel" onclick="closeModal()">Hủy bỏ</button>
+        </div>
+    </div>
+
+    <!-- MODAL XEM TRANG IN DANH SÁCH (ĐÃ LÀM SIÊU GỌN) -->
+    <div class="modal" id="printAreaModal" style="display: none;">
+        <div class="print-modal-content">
+            <h3 style="margin-top:0; color:#1e3a8a; border-bottom: 2px solid #e2e8f0; padding-bottom:8px; font-size:15px; margin-bottom:4px;">📋 DANH SÁCH LỚP HỌC PHẦN ĐÃ CHỌN</h3>
+            <p style="font-size:11px; color:#64748b; margin: 0 0 10px 0;">Danh sách đã tự động gộp lịch học gọn gàng theo từng mã lớp học phần.</p>
+            
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35px; text-align: center;">STT</th>
+                        <th style="width: 120px;">Mã LHP</th>
+                        <th>Tên Môn Học</th>
+                        <th>Giảng Viên</th>
+                        <th style="width: 90px;">Phòng</th>
+                        <th style="width: 190px;">Lịch Học</th>
+                    </tr>
+                </thead>
+                <tbody id="printTableBody">
+                    <!-- Sẽ đổ dữ liệu môn học rút gọn vào đây bằng JS -->
+                </tbody>
+            </table>
+
+            <div class="print-actions" style="margin-top: 20px; display: flex; gap: 8px; justify-content: flex-end;">
+                <button class="btn-cancel" style="width: auto; padding: 8px 16px; font-size:11.5px;" onclick="closePrintModal()">Quay lại sửa</button>
+                <button class="btn-import" style="width: auto; padding: 8px 20px; font-size:11.5px; background-color: #10b981; color: white;" onclick="window.print()">Bấm để In / Lưu PDF</button>
+            </div>
         </div>
     </div>
 
@@ -477,23 +582,15 @@
             return { text: "Cơ sở khác", code: "OTHER" };
         }
 
-        // ĐÃ KHÓA BỎ LỆNH CHẶN: Không bao giờ chặn trùng, luôn cho phép dán lịch thoải mái
-        function checkClashAdvanced(day, slots, currentName, currentLhp) {
-            return { type: 'none' };
-        }
-
-        // Hàm kiểm tra xem một môn học cụ thể có đang bị trùng slot với một môn KHÁC không
         function isSubjectReallyClashed(subObj) {
             let matches = subjectsPlaced.filter(s => s.id !== subObj.id && s.day === subObj.day);
             for (let match of matches) {
-                // Nếu trùng ít nhất 1 tiết chung nhau
                 let hasCommonSlot = subObj.slots.some(slot => match.slots.includes(slot));
                 if (hasCommonSlot) {
-                    // Nếu trùng tên và trùng mã lớp học phần -> Hệ thống coi là cùng 1 môn (không tính là trùng)
                     if (subObj.name.toLowerCase() === match.name.toLowerCase() && subObj.lhp === match.lhp) {
                         continue;
                     }
-                    return true; // Trùng môn khác hoàn toàn!
+                    return true;
                 }
             }
             return false;
@@ -625,7 +722,6 @@
             table.innerHTML = '';
             const selectedCampus = document.getElementById('studentCampus').value;
 
-            // Tính số cột phụ tối đa cho mỗi Thứ
             let daySubColumns = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1 };
             
             timeSlots.forEach(ts => {
@@ -688,8 +784,6 @@
 
                             let roomAnalysis = analyzeRoom(currentSub.room);
                             let isCampusClash = (roomAnalysis.code !== "UNKNOWN" && roomAnalysis.code !== "OTHER" && roomAnalysis.code !== selectedCampus);
-                            
-                            // Kiểm tra trùng lịch giờ học để kích hoạt nhãn chữ đỏ
                             let isTimeClashed = isSubjectReallyClashed(currentSub);
 
                             let td = document.createElement('td');
@@ -719,6 +813,75 @@
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
+        }
+
+        // HÀM XỬ LÝ ĐỔ DỮ LIỆU IN - ĐÃ GOM NHÓM SIÊU GỌN 
+        function openPrintModal() {
+            if (subjectsPlaced.length === 0) {
+                alert("Thời khóa biểu trống! Vui lòng thêm môn học trước.");
+                return;
+            }
+
+            const tbody = document.getElementById("printTableBody");
+            tbody.innerHTML = "";
+
+            // Thuật toán gộp các buổi học trùng Mã LHP thành 1 dòng duy nhất
+            let groupedMap = {};
+            subjectsPlaced.forEach(sub => {
+                let key = sub.lhp + '-' + sub.name.toLowerCase();
+                
+                let dayText = sub.day === 8 ? "Chủ Nhật" : `Thứ ${sub.day}`;
+                let slotsSorted = [...sub.slots].sort((a,b) => a - b);
+                let scheduleString = `${dayText} (T${slotsSorted[0]}-${slotsSorted[slotsSorted.length - 1]})`;
+
+                if (!groupedMap[key]) {
+                    groupedMap[key] = {
+                        lhp: sub.lhp,
+                        name: sub.name,
+                        giangVien: sub.giangVien,
+                        rooms: [sub.room],
+                        schedules: [scheduleString],
+                        minDay: sub.day,
+                        minSlot: slotsSorted[0]
+                    };
+                } else {
+                    if (!groupedMap[key].rooms.includes(sub.room)) {
+                        groupedMap[key].rooms.push(sub.room);
+                    }
+                    groupedMap[key].schedules.push(scheduleString);
+                    // Cập nhật để sort chuẩn theo thứ tự thời gian
+                    if (sub.day < groupedMap[key].minDay || (sub.day === groupedMap[key].minDay && slotsSorted[0] < groupedMap[key].minSlot)) {
+                        groupedMap[key].minDay = sub.day;
+                        groupedMap[key].minSlot = slotsSorted[0];
+                    }
+                }
+            });
+
+            // Chuyển map sang mảng để tiến hành sắp xếp theo Thứ tự thời gian học
+            let finalPrintedList = Object.values(groupedMap).sort((a, b) => {
+                if (a.minDay !== b.minDay) return a.minDay - b.minDay;
+                return a.minSlot - b.minSlot;
+            });
+
+            // Đổ dữ liệu vào bảng
+            finalPrintedList.forEach((sub, index) => {
+                let tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td style="text-align:center; font-weight:bold; color: #64748b;">${index + 1}</td>
+                    <td style="font-family: monospace; font-weight: bold; font-size:11.5px;">${sub.lhp}</td>
+                    <td style="font-weight: 600; color: #1e3a8a;">${sub.name}</td>
+                    <td>${sub.giangVien}</td>
+                    <td style="font-weight: 600; color: #166534;">${sub.rooms.join(', ')}</td>
+                    <td style="color: #475569; font-weight: 500;">${sub.schedules.join(', ')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("printAreaModal").style.display = "flex";
+        }
+
+        function closePrintModal() {
+            document.getElementById("printAreaModal").style.display = "none";
         }
 
         function removeSubject(id) {

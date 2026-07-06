@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xếp Thời Gian Biểu HUFLIT Smart Clean</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --panel-bg: #ffffff;
+            --primary-pastel: #e3f2fd;
+            --primary-text: #0d47a1;
+            --accent-pastel: #e8f5e9;
+            --accent-text: #2e7d32;
+            --danger-pastel: #ffebee;
+            --danger-text: #c62828;
+            --border-radius: 12px;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            color: #334155;
+        }
+
+        .container {
+            display: flex;
+            gap: 12px;
+            max-width: 100%;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        /* SIDEBAR TRÁI */
+        .sidebar {
+            flex: 0 0 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid var(--border-color);
+        }
+
+        h3 {
+            margin-top: 0;
+            font-size: 13px;
+            color: #1e3a8a;
+            border-bottom: 2px solid var(--primary-pastel);
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 6px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 7px;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 11.5px;
+            background-color: #f8fafc;
+            transition: all 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #90caf9;
+            background-color: #fff;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 6px;
+            border-radius: 6px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+        }
+        .checkbox-item input { width: auto; padding: 0; margin: 0; cursor: pointer; }
+
+        button {
+            width: 100%;
+            padding: 9px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 11.5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+        .btn-import { background-color: #bbdefb; color: #0d47a1; }
+        .btn-import:hover { background-color: #90caf9; }
+        .btn-manual { background-color: #cbd5e1; color: #1e293b; }
+        .btn-manual:hover { background-color: #94a3b8; }
+
+        /* BẢNG LỊCH HỌC BÊN PHẢI */
+        .main-board {
+            flex: 1;
+            overflow-x: auto;
+            background: var(--panel-bg);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: fixed;
+            min-width: 900px; /* Tăng nhẹ để có không gian khi chia đôi ô */
+        }
+
+        th, td {
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 4px;
+            text-align: center;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+        th:last-child, td:last-child { border-right: none; }
+        tr:last-child td { border-bottom: none; }
+
+        th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 10px 4px;
+        }
+
+        .slot-col { font-weight: bold; background: #f8fafc; color: #475569; width: 40px; }
+        .time-col { font-size: 11px; color: #64748b; background: #f8fafc; width: 85px; }
+
+        .break-row {
+            background-color: var(--accent-pastel);
+            color: var(--accent-text);
+            font-size: 11.5px;
+            font-weight: 500;
+            height: 35px;
+        }
+
+        /* Khối hiển thị môn học */
+        .placed-subject {
+            background: var(--primary-pastel);
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            text-align: left;
+            position: relative;
+            box-sizing: border-box;
+            height: 100%;
+            min-height: 105px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .placed-title { font-weight: bold; color: var(--primary-text); font-size: 12px; margin-bottom: 4px; line-height: 1.3; }
+        .placed-info { font-size: 10.5px; color: #475569; line-height: 1.4; margin-bottom: 2px; }
+        .placed-info strong { color: #1e293b; font-weight: 600; }
+        
+        .room-display {
+            margin-top: 3px;
+            font-size: 10.5px;
+            color: #475569;
+            line-height: 1.3;
+        }
+
+        .clash-campus {
+            color: var(--danger-text) !important;
+            font-weight: bold !important;
+            font-style: italic !important;
+        }
+
+        .btn-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            color: var(--danger-text);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            background: var(--danger-pastel);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        /* THÔNG BÁO XOÁ MÔN */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #1e293b;
+            color: #ffffff;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 1000;
+            animation: fadeInTop 0.2s ease-out;
+            letter-spacing: 0.5px;
+            border-left: 4px solid var(--danger-text);
+        }
+        @keyframes fadeInTop {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hộp thoại chọn Tiết học */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+        .modal-title { font-weight: bold; color: #1e3a8a; margin-bottom: 12px; font-size: 14px; }
+        .slot-options-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .slot-opt-btn {
+            background: var(--primary-pastel);
+            color: #0d47a1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #90caf9;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            padding-left: 15px;
+            font-size: 12px;
+        }
+        .slot-opt-btn:hover { background: #90caf9; }
+        .btn-cancel { background: #e2e8f0; color: #475569; }
+        .btn-cancel:hover { background: #cbd5e1; }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .sidebar {
+                width: 100%;
+                flex: none;
+            }
+            .main-board {
+                width: 100%;
+                border-radius: 8px;
+            }
+            .toast {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                text-align: center;
+                font-size: 13px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="panel" style="background: #fffbeb; border-color: #fef3c7;">
+                <h3>📍 Cấu hình sinh viên</h3>
+                <div class="form-group">
+                    <label style="color: #b45309;">Cơ sở đang học chính:</label>
+                    <select id="studentCampus" onchange="updateTimetableGrid()">
+                        <option value="SVH">Sư Vạn Hạnh (Q.10)</option>
+                        <option value="TS">Trường Sơn (Tân Bình)</option>
+                        <option value="BG">Ba Gia (Tân Bình)</option>
+                        <option value="HM">Hóc Môn</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>⚡ Cách 1: Dán dữ liệu tự động</h3>
+                <div class="form-group">
+                    <textarea id="multiInput" rows="4" placeholder="Bôi đen copy bảng lớp học phần từ Portal rồi dán vào đây..."></textarea>
+                </div>
+                <button class="btn-import" onclick="processMultiData()">Xử lý & Thêm môn</button>
+            </div>
+
+            <div class="panel">
+                <h3>🛠 Cách 2: Nhập thủ công</h3>
+                <div class="form-group">
+                    <label>Tên môn học:</label>
+                    <input type="text" id="mTenMon" placeholder="Ví dụ: Viết tiếng Nhật 3">
+                </div>
+                <div class="form-group">
+                    <label>Mã Lớp học phần (LHP):</label>
+                    <input type="text" id="mLhp" placeholder="Ví dụ: 261162213302">
+                </div>
+                <div class="form-group">
+                    <label>Giảng viên:</label>
+                    <input type="text" id="mGiangVien" placeholder="Ví dụ: ThS. Đặng Thanh Yến Linh">
+                </div>
+                <div class="form-group">
+                    <label>Nhập Phòng học:</label>
+                    <input type="text" id="mRoom" placeholder="Ví dụ: A302, K201, HPKB1...">
+                </div>
+                <div class="form-group">
+                    <label>Chọn Thứ học:</label>
+                    <select id="mDay">
+                        <option value="2">Thứ Hai</option>
+                        <option value="3">Thứ Ba</option>
+                        <option value="4">Thứ Tư</option>
+                        <option value="5">Thứ Năm</option>
+                        <option value="6">Thứ Sáu</option>
+                        <option value="7">Thứ Bảy</option>
+                        <option value="8">Chủ Nhật</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Chọn tiết (tích chọn nhiều):</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="1">T1</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="2">T2</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="3">T3</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="4">T4</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="5">T5</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="6">T6</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="7">T7</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="8">T8</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="9">T9</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="10">T10</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="11">T11</div>
+                        <div class="checkbox-item"><input type="checkbox" name="mSlots" value="12">T12</div>
+                    </div>
+                </div>
+                <button class="btn-manual" onclick="addManualSubject()">+ Thêm vào lịch học</button>
+            </div>
+        </div>
+
+        <div class="main-board">
+            <table id="mainTimetable">
+                </table>
+        </div>
+    </div>
+
+    <div class="modal" id="slotModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">Chọn khung thời gian học</div>
+            <select id="modalDaySelect" style="margin-bottom: 12px; font-weight: bold; background: #fff;">
+                <option value="2">Học vào: Thứ Hai</option>
+                <option value="3">Học vào: Thứ Ba</option>
+                <option value="4">Học vào: Thứ Tư</option>
+                <option value="5">Học vào: Thứ Năm</option>
+                <option value="6">Học vào: Thứ Sáu</option>
+                <option value="7">Học vào: Thứ Bảy</option>
+                <option value="8">Học vào: Chủ Nhật</option>
+            </select>
+            <div class="slot-options-group" id="optionsGroup"></div>
+            <button class="btn-cancel" onclick="closeModal()">Hủy bỏ</button>
+        </div>
+    </div>
+
+    <div id="toastMessage" class="toast">ĐÃ XÓA KHỎI TKB</div>
+
+    <script>
+        const timeSlots = [
+            { slot: 1, time: '06g45 - 07g35' }, { slot: 2, time: '07g35 - 08g25' }, { slot: 3, time: '08g25 - 09g15' },
+            { isBreak: true, text: 'Nghỉ giải lao 15 phút (09g15 - 09g30)' },
+            { slot: 4, time: '09g30 - 10g20' }, { slot: 5, time: '10g20 - 11g10' }, { slot: 6, time: '11g10 - 12g00' },
+            { isBreak: true, text: 'Nghỉ trưa (12g00 - 12g45)' },
+            { slot: 7, time: '12g45 - 13g35' }, { slot: 8, time: '13g35 - 14g25' }, { slot: 9, time: '14g25 - 15g15' },
+            { isBreak: true, text: 'Nghỉ giải lao 15 phút (15g15 - 15g30)' },
+            { slot: 10, time: '15g30 - 16g20' }, { slot: 11, time: '16g20 - 17g10' }, { slot: 12, time: '17g10 - 18g00' }
+        ];
+
+        const customSlotOptions = {
+            3: [
+                { label: "Ca 3 tiết - Sáng: Tiết 1 - 3 (06g45)", slots: [1, 2, 3] },
+                { label: "Ca 3 tiết - Sáng: Tiết 4 - 6 (09g30)", slots: [4, 5, 6] },
+                { label: "Ca 3 tiết - Chiều: Tiết 7 - 9 (12g45)", slots: [7, 8, 9] },
+                { label: "Ca 3 tiết - Chiều: Tiết 10 - 12 (15g30)", slots: [10, 11, 12] }
+            ],
+            2: [
+                { label: "Ca 2 tiết - Sáng: Tiết 1 - 2 (06g45)", slots: [1, 2] },
+                { label: "Ca 2 tiết - Sáng: Tiết 4 - 5 (09g30)", slots: [4, 5] },
+                { label: "Ca 2 tiết - Chiều: Tiết 7 - 8 (12g45)", slots: [7, 8] },
+                { label: "Ca 2 tiết - Chiều: Tiết 10 - 11 (15g30)", slots: [10, 11] }
+            ]
+        };
+
+        let subjectsPlaced = [];  
+        let pendingModalSubject = null; 
+        let toastTimeout = null;
+
+        function analyzeRoom(roomName) {
+            if (!roomName || roomName.trim() === "" || roomName.includes("Chưa rõ")) {
+                return { text: "Chưa xếp phòng", code: "UNKNOWN" };
+            }
+            let room = roomName.trim().toUpperCase();
+            if (room.startsWith("HPKB")) return { text: "Sân Pickleball - Hóc Môn", code: "HM" };
+            if (room.startsWith("HBL")) return { text: "Hồ bơi 317 - Hóc Môn", code: "HM" };
+            if (room.startsWith("HSSK") || room.startsWith("HSĐN") || room.startsWith("HSBĐ")) return { text: "Khu Thể thao - Hóc Môn", code: "HM" };
+            if (room.startsWith("HB06") || room.startsWith("HB07") || room.startsWith("HA") || room.startsWith("HB")) return { text: "CS Lê Quang Đạo - Hóc Môn", code: "HM" };
+            if (room.startsWith("K")) return { text: "CS Trường Sơn", code: "TS" };
+            if (room.startsWith("G")) return { text: "CS Ba Gia", code: "BG" };
+            if (room.startsWith("A") || room.startsWith("B") || room.startsWith("HT") || room.startsWith("LAB") || room.startsWith("PM")) {
+                return { text: "CS Sư Vạn Hạnh", code: "SVH" };
+            }
+            return { text: "Cơ sở khác", code: "OTHER" };
+        }
+
+        // Kiểm tra trùng lịch: Chỉ chặn nếu khác Tên môn và khác LHP hoàn toàn
+        function checkClashAdvanced(day, slots, currentName, currentLhp) {
+            for (let slot of slots) {
+                let clashes = subjectsPlaced.filter(s => s.day === day && s.slots.includes(slot));
+                for (let clash of clashes) {
+                    if (clash.name.toLowerCase() !== currentName.toLowerCase() && (currentLhp === "Thủ công" || clash.lhp !== currentLhp)) {
+                        return { type: 'block', target: clash }; // Trùng môn khác hoàn toàn -> Chặn
+                    }
+                }
+            }
+            return { type: 'none' };
+        }
+
+        function processMultiData() {
+            const rawText = document.getElementById('multiInput').value;
+            if (!rawText.trim()) { alert('Vui lòng dán dữ liệu vào ô trống!'); return; }
+
+            const lines = rawText.split('\n');
+            let addedCount = 0;
+            let needToChooseTimeSubjects = [];
+            let clashedSubjectsList = [];
+
+            lines.forEach(line => {
+                let cleanLine = line.trim();
+                if (!cleanLine) return;
+
+                let columns = cleanLine.split(/\t| {2,}/).map(c => c.trim()).filter(c => c !== '');
+                if (columns.length < 2) return;
+
+                let slotIdx = columns.findIndex(col => col.match(/^\d+\s*-\s*\d+$/));
+                let lhpIdx = columns.findIndex(col => col.match(/^\d{8,15}$/));
+
+                if (slotIdx !== -1 && lhpIdx !== -1) {
+                    let slotStr = columns[slotIdx];
+                    let dayStr = columns[slotIdx + 1]; 
+                    let day = parseInt(dayStr);
+                    if (isNaN(day) && (dayStr.toLowerCase().includes("chủ") || dayStr.toLowerCase().includes("cn"))) day = 8;
+
+                    let lhpCode = columns[lhpIdx];
+                    let subjectName = columns[lhpIdx + 1] || "Môn học";
+                    let giangVien = columns.length >= 11 ? columns[columns.length - 2] : "Chưa rõ";
+                    let room = columns.length >= 11 ? (columns[columns.length - 3] || "Chưa rõ") : (columns[lhpIdx + 3] || "Chưa rõ");
+
+                    let slots = [];
+                    let parts = slotStr.split('-');
+                    let start = parseInt(parts[0].trim());
+                    let end = parseInt(parts[1].trim());
+                    for (let s = start; s <= end; s++) { if (s >= 1 && s <= 12) slots.push(s); }
+
+                    if (slots.length > 0 && day >= 2 && day <= 8) {
+                        let result = checkClashAdvanced(day, slots, subjectName, lhpCode);
+                        if (result.type === 'none') {
+                            subjectsPlaced.push({
+                                id: 'p-' + Date.now() + Math.random(),
+                                lhp: lhpCode, name: subjectName, giangVien: giangVien, room: room, day: day, slots: slots
+                            });
+                            addedCount++;
+                        } else if (result.type === 'block') {
+                            if (!clashedSubjectsList.includes(subjectName)) clashedSubjectsList.push(subjectName);
+                        }
+                    }
+                } else {
+                    let maMonIdx = columns.findIndex(col => col.match(/^[a-zA-Z0-9]{5,8}$/));
+                    if (maMonIdx !== -1 && maMonIdx + 1 < columns.length) {
+                        let subjectName = columns[maMonIdx + 1];
+                        if (maMonIdx.toString().includes("mã") || subjectName.toLowerCase().includes("tên")) return;
+                        if (subjectName && subjectName.length > 2) {
+                            needToChooseTimeSubjects.push({
+                                lhp: "Theo CTĐT", name: subjectName, giangVien: "Chưa phân công", room: "Chưa rõ"
+                            });
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('multiInput').value = '';
+            updateTimetableGrid();
+
+            if (addedCount > 0) showToast(`ĐÃ XẾP THÀNH CÔNG ${addedCount} LỊCH HỌC!`);
+            if (clashedSubjectsList.length > 0) {
+                alert(`❌ KHÔNG THỂ THÊM các môn sau do trùng lịch với môn KHÁC:\n• ${clashedSubjectsList.join('\n• ')}`);
+            }
+            if (needToChooseTimeSubjects.length > 0) handleSequentialModal(needToChooseTimeSubjects);
+        }
+
+        function handleSequentialModal(list) {
+            if (list.length === 0) return;
+            let current = list.shift();
+            pendingModalSubject = current;
+
+            document.getElementById('modalTitle').innerText = `Xếp giờ CTĐT cho môn: ${current.name}`;
+            const optionsGroup = document.getElementById('optionsGroup');
+            optionsGroup.innerHTML = '';
+
+            [3, 2].forEach(type => {
+                customSlotOptions[type].forEach(opt => {
+                    const btn = document.createElement('div');
+                    btn.className = 'slot-opt-btn';
+                    btn.innerText = opt.label;
+                    btn.onclick = () => {
+                        let chosenDay = parseInt(document.getElementById('modalDaySelect').value);
+                        let result = checkClashAdvanced(chosenDay, opt.slots, pendingModalSubject.name, pendingModalSubject.lhp);
+                        
+                        if (result.type === 'block') {
+                            alert(`❌ TRÙNG LỊCH với môn "${result.target.name}"!`);
+                            return;
+                        }
+                        subjectsPlaced.push({
+                            id: 'p-' + Date.now() + Math.random(),
+                            ...pendingModalSubject,
+                            day: chosenDay,
+                            slots: opt.slots
+                        });
+                        updateTimetableGrid();
+                        closeModal();
+                        handleSequentialModal(list);
+                    };
+                    optionsGroup.appendChild(btn);
+                });
+            });
+            document.getElementById('slotModal').style.display = 'flex';
+        }
+
+        function addManualSubject() {
+            const name = document.getElementById('mTenMon').value.trim();
+            const lhp = document.getElementById('mLhp').value.trim() || "Thủ công";
+            const giangVien = document.getElementById('mGiangVien').value.trim() || "Thủ công";
+            const room = document.getElementById('mRoom').value.trim() || "Chưa rõ";
+            const day = parseInt(document.getElementById('mDay').value);
+            
+            const checkboxes = document.querySelectorAll('input[name="mSlots"]:checked');
+            const slots = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+            if (!name) { alert('Vui lòng điền Tên môn học!'); return; }
+            if (slots.length === 0) { alert('Vui lòng chọn ít nhất một Tiết học!'); return; }
+
+            let result = checkClashAdvanced(day, slots, name, lhp);
+            if (result.type === 'block') {
+                alert(`❌ TRÙNG LỊCH! Khung giờ này đã có môn "${result.target.name}" học rồi.`);
+                return;
+            }
+
+            subjectsPlaced.push({
+                id: 'p-' + Date.now(), lhp: lhp, name: name, giangVien: giangVien, room: room, day: day, slots: slots
+            });
+
+            document.getElementById('mTenMon').value = '';
+            document.getElementById('mLhp').value = '';
+            document.getElementById('mGiangVien').value = '';
+            document.getElementById('mRoom').value = '';
+            checkboxes.forEach(cb => cb.checked = false);
+
+            updateTimetableGrid();
+        }
+
+        // THUẬT TOÁN DỰNG GRID TỰ ĐỘNG PHÂN CHIA SONG SONG NHIỀU CỘT
+        function updateTimetableGrid() {
+            const table = document.getElementById('mainTimetable');
+            table.innerHTML = '';
+
+            const selectedCampus = document.getElementById('studentCampus').value;
+
+            // Bước 1: Tính toán số lượng cột tối đa cần có cho mỗi Thứ (Mặc định = 1)
+            let daySubColumns = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1 };
+            
+            timeSlots.forEach(ts => {
+                if (ts.isBreak) return;
+                for (let d = 2; d <= 8; d++) {
+                    let count = subjectsPlaced.filter(s => s.day === d && s.slots.includes(ts.slot)).length;
+                    if (count > daySubColumns[d]) {
+                        daySubColumns[d] = count; // Nếu khung giờ đó có 2 môn trùng, Thứ đó biến thành 2 cột song song
+                    }
+                }
+            });
+
+            // Bước 2: Tạo Header (Dòng tiêu đề Thứ) tương ứng số cột đã tính toán
+            let thead = document.createElement('thead');
+            let hTr = document.createElement('tr');
+            hTr.innerHTML = `<th class="slot-col" rowspan="2">Tiết</th><th class="time-col" rowspan="2">Thời gian học</th>`;
+            
+            for (let d = 2; d <= 8; d++) {
+                let label = d === 8 ? 'CN' : `Thứ ${d}`;
+                hTr.innerHTML += `<th colspan="${daySubColumns[d]}">${label}</th>`;
+            }
+            thead.appendChild(hTr);
+            table.appendChild(thead);
+
+            // Bước 3: Tạo Ma trận ô trống sẵn sàng điền dữ liệu
+            let tbody = document.createElement('tbody');
+            
+            // Một object lưu trạng thái ô nào đã bị gộp (rowspan) bao phủ để bỏ qua khi duyệt dòng sau
+            let covered = {}; 
+
+            timeSlots.forEach(ts => {
+                let tr = document.createElement('tr');
+                if (ts.isBreak) {
+                    tr.className = 'break-row';
+                    let totalCols = 2 + Object.values(daySubColumns).reduce((a, b) => a + b, 0);
+                    tr.innerHTML = `<td colspan="${totalCols}">${ts.text}</td>`;
+                    tbody.appendChild(tr);
+                    return;
+                }
+
+                tr.innerHTML = `<td class="slot-col">${ts.slot}</td><td class="time-col">${ts.time}</td>`;
+
+                for (let d = 2; d <= 8; d++) {
+                    let totalSubCols = daySubColumns[d];
+                    
+                    // Lấy tất cả môn học thuộc Thứ này đang bắt đầu đúng từ Tiết này
+                    let activeSubs = subjectsPlaced.filter(s => s.day === d && [...s.slots].sort((a,b)=>a-b)[0] === ts.slot);
+                    
+                    for (let cIdx = 0; cIdx < totalSubCols; cIdx++) {
+                        let coverKey = `${ts.slot}-${d}-${cIdx}`;
+                        if (covered[coverKey]) continue; // Ô này đang bị môn dòng trên đè xuống (rowspan), bỏ qua không render
+
+                        let currentSub = activeSubs[cIdx];
+
+                        if (currentSub) {
+                            let sorted = [...currentSub.slots].sort((a,b)=>a-b);
+                            let duration = sorted.length;
+                            
+                            // Đánh dấu bao phủ các ô dòng dưới
+                            for (let sItem of sorted) {
+                                covered[`${sItem}-${d}-${cIdx}`] = true;
+                            }
+
+                            // Xác định xem ô môn học này có được kéo rộng ra (colspan) cho hết các cột trống không
+                            let remCols = totalSubCols - cIdx;
+                            let colSpanAttr = (activeSubs.length === 1) ? `colspan="${remCols}"` : '';
+                            if (activeSubs.length === 1) cIdx = totalSubCols; // Nhảy cóc luôn nếu chiếm hết cột còn lại
+
+                            let roomAnalysis = analyzeRoom(currentSub.room);
+                            let isClash = (roomAnalysis.code !== "UNKNOWN" && roomAnalysis.code !== "OTHER" && roomAnalysis.code !== selectedCampus);
+
+                            let td = document.createElement('td');
+                            if (colSpanAttr) td.setAttribute('colspan', remCols);
+                            td.setAttribute('rowspan', duration);
+                            td.style.height = `${duration * 46}px`;
+                            td.innerHTML = `
+                                <div class="placed-subject">
+                                    <span class="btn-delete" onclick="removeSubject('${currentSub.id}')">×</span>
+                                    <div class="placed-title">${currentSub.name}</div>
+                                    <div class="placed-info">LHP: <strong>${currentSub.lhp}</strong></div>
+                                    <div class="placed-info">GV: <strong>${currentSub.giangVien}</strong></div>
+                                    <div class="room-display ${isClash ? 'clash-campus' : ''}">
+                                      Phòng: ${currentSub.room} <br>
+                                      <span style="font-size:10px; opacity:0.8;">(${roomAnalysis.text})</span>
+                                    </div>
+                                </div>
+                            `;
+                            tr.appendChild(td);
+                        } else {
+                            // Ô trống bình thường không có môn học
+                            let td = document.createElement('td');
+                            tr.appendChild(td);
+                        }
+                    }
+                }
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+        }
+
+        function removeSubject(id) {
+            subjectsPlaced = subjectsPlaced.filter(s => s.id !== id);
+            updateTimetableGrid();
+            showToast("ĐÃ XÓA KHỎI TKB");
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toastMessage");
+            toast.innerText = message;
+            toast.style.display = "block";
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => { toast.style.display = "none"; }, 5000);
+        }
+
+        function closeModal() { document.getElementById('slotModal').style.display = 'none'; }
+
+        updateTimetableGrid();
+    </script>
+</body>
+</html>
